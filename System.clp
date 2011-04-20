@@ -133,7 +133,6 @@
     (question (factor ?factor) (category ?category))
     ?category-results <- (category-results (category ?category) (score ?score) (title ?title))
     =>
-    (printout t ?title " " ?factor " is worth " ?answer-value " points" crlf)
     (retract ?answer)
     (bind ?*score* (+ ?*score* ?answer-value))
     (retract ?category-results)
