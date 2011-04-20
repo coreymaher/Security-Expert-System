@@ -133,6 +133,7 @@
     (question (factor ?factor) (category ?category))
     ?category-results <- (category-results (category ?category) (score ?score) (title ?title))
     =>
+    (printout t ?title " " ?factor " is worth " ?answer-value " points" crlf)
     (retract ?answer)
     (bind ?*score* (+ ?*score* ?answer-value))
     (retract ?category-results)
@@ -147,7 +148,7 @@
 (defrule tally-results-no-value
     (system-status (status tally))
     ?answer <- (answer (known-factor ?factor) (value ?value))
-    (not (answer-value (question ?factor) (answer ?value) (value ?answer-value)))
+    (not (answer-value (question ?factor) (answer ?value)))
     =>
     (retract ?answer)
 )
@@ -231,13 +232,13 @@
     
     ;Certification, Accreditation, Security Assessments
     (answer-value (question assessed))
-    (answer-value (question vulnerability-reduction) (answer "only developed"))
-    (answer-value (question vulnerability-reduction) (answer "developed and implemented") (value 2))
+    (answer-value (question vulnerability-reduction) (answer developed))
+    (answer-value (question vulnerability-reduction) (answer implemented) (value 2))
     (answer-value (question monitor-controls))
     
     ;Maintenance
     (answer-value (question periodic-maintenance))
-    (answer-value (question timely-maintenace))
+    (answer-value (question timely-maintenance))
     (answer-value (question effective-controls) (answer some))
     (answer-value (question effective-controls) (answer all) (value 2))
 )
@@ -259,8 +260,8 @@
     
     ;Certification, Accreditation, Security Assessments
     (result (category certification) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should periodically assess security controls, develop and implement plans to correct deficiencies or reduce vulnerabilities, and monitor security controls."))
-    (result (category certification) (fuzzy-score "Fair") (min 1) (max 4) (reason "Meets some of the guidelines. Should periodically assess security controls, develop and implement plans to correct deficiencies or reduce vulnerabilities, and monitor security controls."))
-    (result (category certification) (fuzzy-score "Excellent") (min 5) (max 5) (reason "Meets guidelines."))
+    (result (category certification) (fuzzy-score "Fair") (min 1) (max 3) (reason "Meets some of the guidelines. Should periodically assess security controls, develop and implement plans to correct deficiencies or reduce vulnerabilities, and monitor security controls."))
+    (result (category certification) (fuzzy-score "Excellent") (min 4) (max 4) (reason "Meets guidelines."))
     
     ;Maintenance
     (result (category maintenance) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should perform periodic and timely maintenance. Also should provide effective controls on tools, techniques, mechanisms, and personnel used to conduct maintenance."))
