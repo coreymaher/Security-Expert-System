@@ -26,7 +26,6 @@
 (deftemplate category-results
 	(slot category)
     (slot score (default 0))
-    (slot reported (default FALSE))
     (slot title)
 )
 
@@ -64,16 +63,7 @@
             	(known-factor ?factor)
     			(value (ask-question ?question $?choices)))
     )
-    (retract ?q)
-    (assert (question
-            	(text ?question)
-            	(factor ?factor)
-            	(choices $?choices)
-            	(pre-condition none)
-            	(category ?category)
-            	(asked TRUE)
-            )
-     )
+    (modify ?q (asked TRUE))
 )
 
 (defrule ask-questions-with-preconditions
@@ -93,16 +83,7 @@
             	(known-factor ?factor)
     			(value (ask-question ?question $?choices)))
     )
-    (retract ?q)
-    (assert (question
-        	(text ?question)
-        	(factor ?factor)
-        	(choices $?choices)
-        	(pre-condition ?precondition)
-        	(category ?category)
-        	(asked TRUE)
-        )
-     )
+    (modify ?q (asked TRUE))
 )
 
 (defrule choose-category
@@ -110,20 +91,14 @@
     (not (question (category ?current-category) (asked FALSE)))
     (question (category ?next-category) (asked FALSE))
 	=>
-	(assert (system-status (status elicitation) (current-category ?next-category)))
-    (retract ?status)
+    (modify ?status (current-category ?next-category))
 )
 
 (defrule end-elicitation
     ?s <- (system-status (status elicitation))
     (not (question (asked FALSE)))
     =>
-    (retract ?s)
-    (assert (system-status (status tally)))
-)
-
-(defglobal
-    ?*score* = 0
+    (modify ?s (status tally))
 )
 
 (defrule tally-results-value
@@ -131,17 +106,10 @@
     ?answer <- (answer (known-factor ?factor) (value ?value))
     (answer-value (question ?factor) (answer ?value) (value ?answer-value))
     (question (factor ?factor) (category ?category))
-    ?category-results <- (category-results (category ?category) (score ?score) (title ?title))
+    ?category-results <- (category-results (category ?category) (score ?score))
     =>
     (retract ?answer)
-    (bind ?*score* (+ ?*score* ?answer-value))
-    (retract ?category-results)
-    (assert (category-results
-            	(category ?category)
-            	(score (+ ?score ?answer-value))
-            	(title ?title)
-            )
-    )
+    (modify ?category-results (score (+ ?score ?answer-value)))
 )
 
 (defrule tally-results-no-value
@@ -156,13 +124,12 @@
     ?s <- (system-status (status tally))
     (not (answer))
     =>
-    (retract ?s)
-    (assert (system-status (status report)))
+    (modify ?s (status report))
 )
 
 (defrule report
     (system-status (status report))
-    ?category-result <- (category-results (reported FALSE) (category ?category) (title ?title) (score ?score))
+    ?category-result <- (category-results (category ?category) (title ?title) (score ?score))
     (result (category ?category) (min ?min) (max ?max) (reason ?reason) (fuzzy-score ?fuzzy-score))
     (test (and (>= ?score ?min) (<= ?score ?max)))
     =>
@@ -191,23 +158,23 @@
 (deffacts questions
     ;Access Control
     (question (factor limit-access) (text "Does the system limit access to authorized users?") (category access-control))
-    
+
     ;Awareness and Training
     (question (factor manager-awareness) (text "Are managers aware of system security risks?") (category awareness-training))
     (question (factor user-awareness) (text "Are users aware of system security risks?") (pre-condition manager-awareness) (category awareness-training))
     (question (factor training) (text "Are personnel adequately trained to carry out security-related duties?") (category awareness-training))
-    
+
     ;Audit and Accountability
     (question (factor create-audit) (text "Are audit records created?") (pre-condition audit) (category audit-accountability))
     (question (factor protect-audit) (text "Are audit records protected?") (pre-condition create-audit) (category audit-accountability))
     (question (factor retain-audit) (text "Are audit records retained?") (pre-condition protect-audit) (category audit-accountability))
     (question (factor audit) (text "Can actions of users be uniquely traced back?") (category audit-accountability))
-    
+
     ;Certification, Accreditation, Security Assessments
     (question (factor assessed) (text "Are security controls periodically assessed?") (category certification))
     (question (factor vulnerability-reduction) (text "Have plans been developed and implemented to correct deficiencies or reduce vulnerabilities?") (category certification) (choices developed implemented neither))
     (question (factor monitor-controls) (text "Are security controls monitored to ensure their effectiveness?") (category certification))
-    
+
     ;Maintenance
     (question (factor periodic-maintenance) (text "Is periodic maintenance performed?") (category maintenance))
     (question (factor timely-maintenance) (text "Is maintenance performed in a timely manner?") (pre-condition periodic-maintenance) (category maintenance))
@@ -217,24 +184,24 @@
 (deffacts answers
     ; Access Control
     (answer-value (question limit-access))
-    
+
     ;Awareness and Training
     (answer-value (question manager-awareness))
     (answer-value (question user-awareness))
     (answer-value (question training))
-    
+
     ;Audit and Accountability
     (answer-value (question create-audit))
     (answer-value (question protect-audit))
     (answer-value (question retain-audit))
     (answer-value (question audit))
-    
+
     ;Certification, Accreditation, Security Assessments
     (answer-value (question assessed))
     (answer-value (question vulnerability-reduction) (answer developed))
     (answer-value (question vulnerability-reduction) (answer implemented) (value 2))
     (answer-value (question monitor-controls))
-    
+
     ;Maintenance
     (answer-value (question periodic-maintenance))
     (answer-value (question timely-maintenance))
@@ -246,22 +213,22 @@
     ; Access Control
     (result (category access-control) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should limit access to authorized users."))
     (result (category access-control) (fuzzy-score "Excellent") (min 1) (max 1) (reason "Meets guidelines."))
-    
+
     ;Awareness and Training
     (result (category awareness-training) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should ensure all users are aware of security risks and personnel are adequately trained."))
     (result (category awareness-training) (fuzzy-score "Fair") (min 1) (max 2) (reason "Meets some of the guidelines. Should ensure all users are aware of security risks and personnel are adequately trained."))
     (result (category awareness-training) (fuzzy-score "Excellent") (min 3) (max 3) (reason "Meets guidelines."))
-    
+
     ; Audit and Accountability
     (result (category audit-accountability) (fuzzy-score "Poor") (min 0) (max 0) (reason "Audit information should be created, protected, and retained in order to uniquely track user actions."))
     (result (category audit-accountability) (fuzzy-score "Fair") (min 1) (max 3) (reason "Meets some of the guidelines. Audit information should be created, protected, and retained in order to uniquely track user actions."))
     (result (category audit-accountability) (fuzzy-score "Excellent") (min 4) (max 4) (reason "Meets guidelines."))
-    
+
     ;Certification, Accreditation, Security Assessments
     (result (category certification) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should periodically assess security controls, develop and implement plans to correct deficiencies or reduce vulnerabilities, and monitor security controls."))
     (result (category certification) (fuzzy-score "Fair") (min 1) (max 3) (reason "Meets some of the guidelines. Should periodically assess security controls, develop and implement plans to correct deficiencies or reduce vulnerabilities, and monitor security controls."))
     (result (category certification) (fuzzy-score "Excellent") (min 4) (max 4) (reason "Meets guidelines."))
-    
+
     ;Maintenance
     (result (category maintenance) (fuzzy-score "Poor") (min 0) (max 0) (reason "Should perform periodic and timely maintenance. Also should provide effective controls on tools, techniques, mechanisms, and personnel used to conduct maintenance."))
     (result (category maintenance) (fuzzy-score "Fair") (min 1) (max 3) (reason "Meets some of the guidelines. Should perform periodic and timely maintenance. Also should provide effective controls on tools, techniques, mechanisms, and personnel used to conduct maintenance."))
